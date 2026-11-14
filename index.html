@@ -10,24 +10,11 @@ Mascot is Jemma the orc -->
     <title>orcOS Prototype</title>
     <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-    <div id="login-screen">
-        <div class="login-box window-shell">
-            <h2>Identify Yourself, Stranger</h2>
-            <input type="email" id="auth-email" placeholder="Email (Scroll Address)">
-            <input type="password" id="auth-password" placeholder="Password (Max 10 chars)" maxlength="10">
-            <div class="auth-buttons">
-                <button class="scroll-btn" onclick="handleAuth('login')">Login/Enter the Horde</button>
-                <button class="scroll-btn" onclick="handleAuth('signup')">Sign-up/Join the Horde</button>
-            </div>
-            <p id="auth-error" style="color: red; font-size: 0.8rem;"></p>
-        </div>
-    </div>
-
-    <div id="desktop" class="hidden">
+    <!-- Desktop is now shown immediately by default -->
+    <div id="desktop">
         <div id="browser-search-container" onmousedown="dragElement(this)">
             <input type="text" id="browser-url" placeholder="Enter a realm..." onkeydown="if(event.key === 'Enter') launchSite()">
             <select id="browser-choice">
@@ -97,7 +84,6 @@ Mascot is Jemma the orc -->
                         <option value="left">Left</option>
                         <option value="center">Center</option>
                     </select>
-                    <button class="scroll-btn" onclick="handleSignOut()" style="margin-top:10px; width:100%;">Sign Out</button>
                 </section>
             </div>
         </div>
