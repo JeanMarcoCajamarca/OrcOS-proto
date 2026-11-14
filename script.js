@@ -1,90 +1,3 @@
-// Initialize Supabase Client
-const _supabaseUrl = 'https://ovjimwuszbumvbdvvgqa.supabase.co';
-const _supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92amltd3VzemJ1bXZiZHZ2Z3FhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxMjg2ODMsImV4cCI6MjA4NzcwNDY4M30.3cyON8YKHiq4m873YV_QxVE-uT4daGfJ7aXnzWfN7Gw';
-const db = supabase.createClient(_supabaseUrl, _supabaseKey);
-
-let currentUser = null;
-
-async function handleAuth(type) {
-    const email = document.getElementById('auth-email').value;
-    const password = document.getElementById('auth-password').value;
-    const errorDisplay = document.getElementById('auth-error');
-    
-    if (password.length > 10) {
-        errorDisplay.innerText = "Password too long! 10 chars max., please!";
-        return;
-    }
-
-    errorDisplay.innerText = "Processing..."; // Visual feedback for the user
-    
-    let result;
-    if (type === 'signup') {
-        result = await db.auth.signUp({ email, password });
-        if (!result.error) {
-            // If Confirm Email is ON, the user must stay here until they verify
-            alert("Welcome to the Horde! Please check your email to verify your account.");
-            errorDisplay.innerText = "Verification email sent!";
-            return;
-        }
-    } else {
-        result = await db.auth.signInWithPassword({ email, password });
-    }
-
-    if (result.error) {
-        // This will now show "Email not confirmed" instead of staying on "Processing..."
-        errorDisplay.innerText = result.error.message;
-    } else {
-        currentUser = result.data.user;
-        enterOS(); // Successfully enters the OS
-    }
-}
-
-// THE MISSING FUNCTION: This tells the browser to show the desktop
-function enterOS() {
-    const loginScreen = document.getElementById('login-screen');
-    const desktop = document.getElementById('desktop');
-    
-    if (loginScreen) {
-        loginScreen.classList.add('hidden'); // Hides the login box
-    }
-    if (desktop) {
-        desktop.classList.remove('hidden'); // Shows the desktop
-    }
-    console.log("Welcome to the Horde!");
-    /*document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('desktop').classList.remove('hidden');
-    loadUserData(); // Pick up where they left off */
-}
-
-async function handleSignOut() {
-    await db.auth.signOut();
-    location.reload(); // Returns to login screen
-}
-
-//Data Persistence (Supabase Database) --> added March 19, 2026
-async function saveToCloud() {
-    const content = document.getElementById('journal-editor').value;
-
-    const { error } = await db.from('user_data').upsert({ 
-        user_id: currentUser.id, 
-        journal_content: content,
-        settings: { bgColor: document.getElementById('desktop').style.backgroundColor }
-    });
-
-    if (error) alert("Error etching to cloud: " + error.message);
-    else alert("Progress saved to the Horde archives!");
-}
-
-async function loadUserData() {
-    const { data, error } = await db.from('user_data').select('*').eq('user_id', currentUser.id).single();
-    if (data) {
-        document.getElementById('journal-editor').value = data.journal_content || "";
-        if (data.settings && data.settings.bgColor) {
-            document.getElementById('desktop').style.backgroundColor = data.settings.bgColor;
-        }
-    }
-}
-
 // 1. Clock, Weather, and Date Logic
 function updateDashboard() {
     const now = new Date();
@@ -160,41 +73,10 @@ function checkWordCount() {
     if (words > 1000) alert("You have reached the 1000 word limit!");
 }
 
-/*function saveJournal() {
+function saveJournal() {
     const content = document.getElementById('journal-editor').value;
     localStorage.setItem('orcOS_journal', content);
     alert("Journal entry etched into storage!");
-}*/
-
-// Updated Save Function to use Supabase
-async function saveJournal() {
-    const content = document.getElementById('journal-editor').value;
-    
-    // Check if user is logged in first
-    const { data: { user } } = await db.auth.getUser();
-    
-    if (!user) {
-        // Fallback to local storage if not logged in
-        localStorage.setItem('orcOS_journal', content);
-        alert("Not logged in. Progress saved locally to this browser only.");
-        return;
-    }
-
-    // Save to Supabase 'user_data' table
-    const { error } = await db
-        .from('user_data')
-        .upsert({ 
-            user_id: user.id, 
-            journal_content: content,
-            last_updated: new Date() 
-        });
-
-    if (error) {
-        console.error("Cloud save failed:", error);
-        alert("Failed to etch into the cloud archives.");
-    } else {
-        alert("Journal entry synced to your account in the cloud!");
-    }
 }
 
 // Function to load data when the app opens
@@ -202,20 +84,8 @@ async function openApp(id) {
     document.getElementById(id).classList.remove('hidden');
     
     if (id === 'app-journal') {
-        const { data: { user } } = await db.auth.getUser();
-        
-        if (user) {
-            const { data } = await db
-                .from('user_data')
-                .select('journal_content')
-                .eq('user_id', user.id)
-                .single();
-            
-            if (data) document.getElementById('journal-editor').value = data.journal_content;
-        } else {
-            const saved = localStorage.getItem('orcOS_journal');
-            if (saved) document.getElementById('journal-editor').value = saved;
-        }
+        const saved = localStorage.getItem('orcOS_journal');
+        if (saved) document.getElementById('journal-editor').value = saved;
     }
 }
 
@@ -274,18 +144,3 @@ if (justinDragon) {
         alert("Justin Dragon is my name! Settings is my game! I can fix it for you!");
     });
 }
-
-// Automatically detect when a user returns from a confirmation email --> March 19, 2026
-db.auth.onAuthStateChange((event, session) => {
-  if (event === 'SIGNED_IN' && session) {
-    console.log("Member verified!");
-    currentUser = session.user;
-    
-    // Hide your login screen and show the desktop
-    document.getElementById('login-screen').classList.add('hidden'); 
-    document.getElementById('desktop').classList.remove('hidden');
-    
-    // Load their saved settings
-    loadUserData();
-  }
-});
